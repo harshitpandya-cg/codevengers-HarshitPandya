@@ -40,13 +40,27 @@ export default function CharacterCard({
         />
       </div>
 
-      <div className="bg-mystery-panelLight border border-mystery-hairline rounded-sm shadow-2xl pt-6 pb-6 sm:pb-8 px-5 sm:px-8 lg:px-10 ml-3">
-        <p className="font-typewriter text-xs uppercase tracking-widest text-mystery-textSecondary mb-2">
-          Your Role — Private Dossier
-        </p>
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-case font-semibold text-mystery-text mb-8 leading-tight">
-          You are {name}
-        </h2>
+      <div className="relative bg-[#110e0c] border border-mystery-hairline rounded-sm shadow-2xl pt-6 pb-6 sm:pb-8 px-5 sm:px-8 lg:px-10 ml-3 overflow-hidden">
+        {/* Vintage Paper Texture */}
+        <div 
+          className="absolute inset-0 bg-center bg-cover bg-no-repeat opacity-40 pointer-events-none"
+          style={{ backgroundImage: `url('/diary_texture.png')` }}
+        />
+
+        {/* Top Secret Stamp */}
+        <div className="absolute top-4 right-4 pointer-events-none opacity-80 -rotate-12">
+          <div className="border-4 border-mystery-red/70 text-mystery-red/70 font-typewriter text-xl sm:text-2xl uppercase tracking-widest px-4 py-1 rounded-sm shadow-sm backdrop-blur-sm">
+            TOP SECRET
+          </div>
+        </div>
+
+        <div className="relative z-10">
+          <p className="font-typewriter text-xs uppercase tracking-widest text-mystery-textSecondary mb-2">
+            Your Role — Private Dossier
+          </p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-case font-semibold text-mystery-text mb-8 leading-tight w-3/4">
+            You are {name}
+          </h2>
 
         <div className="space-y-8">
           {/* Background */}
@@ -106,6 +120,7 @@ export default function CharacterCard({
               {motive}
             </p>
           </section>
+        </div>
         </div>
       </div>
     </article>

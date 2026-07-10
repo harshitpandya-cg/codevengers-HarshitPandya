@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Stamp } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const DEFAULT_LABEL = 'The Game Master is crafting your mystery…';
 const DEFAULT_HINT = 'This may take 10–20 seconds';
@@ -48,11 +49,18 @@ export default function LoadingMystery({
   const showCursor = !prefersReducedMotion && typedText.length < label.length;
 
   return (
-    <div className="min-h-screen bg-mystery-bg flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center relative overflow-hidden font-case">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.15 }}
+        transition={{ duration: 2 }}
+        className="absolute inset-0 bg-center bg-cover bg-no-repeat"
+        style={{ backgroundImage: `url('/diary_texture.png')` }}
+      />
       <div className="desk-lamp-vignette absolute inset-0 pointer-events-none" aria-hidden="true" />
 
       <div className="relative z-10 max-w-xl w-full space-y-6">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-case text-mystery-text leading-snug min-h-[3.5rem] sm:min-h-[4.5rem]">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-typewriter uppercase tracking-widest text-mystery-text leading-snug min-h-[3.5rem] sm:min-h-[4.5rem]">
           {prefersReducedMotion ? (
             label
           ) : (
@@ -65,16 +73,16 @@ export default function LoadingMystery({
           )}
         </h2>
 
-        <p className="text-mystery-textSecondary font-case italic text-base sm:text-lg">
+        <p className="text-mystery-textSecondary font-typewriter italic text-base sm:text-lg">
           {hint}
         </p>
 
         <div className="flex flex-col items-center gap-5 pt-4">
           <div
-            className="flex items-center justify-center w-14 h-14 rounded-full border-2 border-mystery-brass/40 bg-mystery-panelLight animate-stamp-pulse motion-reduce:animate-none"
+            className="flex items-center justify-center w-14 h-14 rounded-full border-2 border-mystery-red/40 bg-black/50 animate-stamp-pulse motion-reduce:animate-none"
             aria-hidden="true"
           >
-            <Stamp className="w-7 h-7 text-mystery-brass" />
+            <Stamp className="w-7 h-7 text-mystery-red" />
           </div>
 
           <div className="flex items-center gap-2" role="progressbar" aria-label="Generating mystery">

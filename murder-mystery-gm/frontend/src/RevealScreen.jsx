@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Skull, AlertTriangle, CheckCircle, RefreshCcw } from 'lucide-react';
+import { Skull, AlertTriangle, CheckCircle, RefreshCcw, ScrollText } from 'lucide-react';
 
-export default function RevealScreen({ revealData, isHost, onReturnToLobby }) {
+export default function RevealScreen({ revealData, isHost, onReturnToLobby, onViewReplay }) {
   const { trueMurdererName, voteBreakdown, epilogueText, success } = revealData;
   const [typedEpilogue, setTypedEpilogue] = useState('');
   
@@ -93,8 +93,16 @@ export default function RevealScreen({ revealData, isHost, onReturnToLobby }) {
           </div>
         </div>
 
-        {/* Play Again Action */}
-        <div className="flex justify-center pt-8">
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-8">
+          <button
+             onClick={onViewReplay}
+             className="flex items-center space-x-2 py-4 px-8 border border-mystery-brass text-mystery-brass rounded font-typewriter uppercase tracking-widest hover:bg-mystery-brass/10 transition-all shadow-lg hover:-translate-y-0.5"
+          >
+             <ScrollText className="w-5 h-5" />
+             <span>View Timeline</span>
+          </button>
+
           {isHost ? (
             <button
               onClick={onReturnToLobby}
@@ -104,7 +112,7 @@ export default function RevealScreen({ revealData, isHost, onReturnToLobby }) {
               <span>Play Again</span>
             </button>
           ) : (
-            <div className="text-mystery-textSecondary font-typewriter uppercase tracking-widest animate-pulse">
+            <div className="text-mystery-textSecondary font-typewriter uppercase tracking-widest animate-pulse py-4">
               Waiting for host to start a new game...
             </div>
           )}

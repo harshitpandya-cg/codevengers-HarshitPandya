@@ -9,6 +9,10 @@ import InvestigateTab from './InvestigateTab';
 import AccuseTab from './AccuseTab';
 import RevealScreen from './RevealScreen';
 import AdminTest from './AdminTest';
+import IntroSequence from './IntroSequence';
+import CaseSelectionScreen from './CaseSelectionScreen';
+import CaseIntro from './CaseIntro';
+import ReplayScreen from './ReplayScreen';
 
 const MIN_PLAYERS = 3;
 
@@ -24,6 +28,8 @@ export default function App() {
   const [hostId, setHostId] = useState('');
   const [myCharacter, setMyCharacter] = useState(null);
   const [caseInfo, setCaseInfo] = useState(null);
+  const [playedIntro, setPlayedIntro] = useState(false);
+  const [selectedMockCase, setSelectedMockCase] = useState(null);
   
   // Phase 3 State
   const [gameTab, setGameTab] = useState('dossier'); // dossier, investigate, accuse
@@ -40,7 +46,7 @@ export default function App() {
 
     function onGamePhase({ phase }) {
       if (phase === 'loading') {
-        setView('loading');
+        setView('case_intro');
         setIsStarting(false);
         setError('');
       } else if (phase === 'lobby') {
@@ -88,7 +94,7 @@ export default function App() {
     function onGameError({ message }) {
       setError(message);
       setIsStarting(false);
-      if (view === 'loading') setView('lobby');
+      setView(prev => (prev === 'loading' || prev === 'case_intro' ? 'lobby' : prev));
     }
 
     socket.on('playerListUpdate', onPlayerListUpdate);
@@ -128,7 +134,12 @@ export default function App() {
         setCurrentRoom(res.roomCode);
         setPlayers(res.players);
         setHostId(res.hostId);
-        setView('lobby');
+        if (!playedIntro) {
+          setView('intro');
+          setPlayedIntro(true);
+        } else {
+          setView('lobby');
+        }
       } else {
         setError(res.error);
       }
@@ -146,7 +157,12 @@ export default function App() {
         setCurrentRoom(res.roomCode);
         setPlayers(res.players);
         setHostId(res.hostId);
-        setView('lobby');
+        if (!playedIntro) {
+          setView('intro');
+          setPlayedIntro(true);
+        } else {
+          setView('lobby');
+        }
       } else {
         setError(res.error);
       }
@@ -154,12 +170,18 @@ export default function App() {
   };
 
   const handleStartGame = () => {
+    setView('case_selection');
+  };
+
+  const handleSelectCase = (caseData) => {
+    setSelectedMockCase(caseData);
     setError('');
     setIsStarting(true);
-    socket.emit('startGame', { roomCode: currentRoom }, (res) => {
+    socket.emit('startGame', { roomCode: currentRoom, caseId: caseData.id }, (res) => {
       if (!res?.ok) {
         setError(res?.error || 'Failed to start game');
         setIsStarting(false);
+        setView('lobby');
       }
     });
   };
@@ -200,13 +222,39 @@ export default function App() {
   //  VIEWS
   // =====================
 
+  if (view === 'intro') {
+    return <IntroSequence onComplete={() => setView('lobby')} />;
+  }
+
+  if (view === 'case_selection') {
+    return <CaseSelectionScreen onSelectCase={handleSelectCase} isHost={socket.id === hostId} />;
+  }
+
+  if (view === 'case_intro') {
+    // If guest, use default mock data since they don't have selectedMockCase until we sync it
+    const introData = selectedMockCase || {
+      title: 'A Murder Has Occurred',
+      victim: 'Someone Important',
+      location: 'The City',
+      description: 'The details are murky, but the truth will come out.'
+    };
+    return <CaseIntro caseInfo={introData} onComplete={() => setView('loading')} />;
+  }
+
   if (view === 'reveal' && revealData) {
     return (
       <RevealScreen 
         revealData={revealData}
         isHost={socket.id === hostId}
         onReturnToLobby={handleReturnToLobby}
+        onViewReplay={() => setView('replay')}
       />
+    );
+  }
+
+  if (view === 'replay') {
+    return (
+      <ReplayScreen onReturnToLobby={handleReturnToLobby} />
     );
   }
 
@@ -236,7 +284,7 @@ export default function App() {
             />
           )}
           {gameTab === 'investigate' && (
-            <InvestigateTab sharedClues={sharedClues} />
+            <InvestigateTab sharedClues={sharedClues} players={players} />
           )}
           {gameTab === 'accuse' && (
             <AccuseTab 
