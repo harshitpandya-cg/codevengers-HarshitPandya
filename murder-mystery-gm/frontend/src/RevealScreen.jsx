@@ -52,7 +52,7 @@ export default function RevealScreen({ revealData, isHost, onReturnToLobby, setG
   }, [epilogueText, revealStage]);
 
   return (
-    <div className="min-h-screen bg-mystery-bg text-mystery-text font-case p-6 pb-24 overflow-y-auto custom-scrollbar">
+    <div className="reveal-cinematic min-h-screen bg-mystery-bg text-mystery-text font-case p-6 pb-24 overflow-y-auto custom-scrollbar">
       <div className="max-w-4xl mx-auto space-y-12 mt-8">
         
         {/* Header */}

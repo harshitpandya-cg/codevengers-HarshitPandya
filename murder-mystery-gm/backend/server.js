@@ -8,21 +8,13 @@ import { registerSocketHandlers } from './socket/index.js';
 const PORT = process.env.PORT || 4000;
 
 /** Comma-separated list, e.g. http://localhost:5173,https://your-app.vercel.app */
-const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://localhost:5174')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
 
 const corsOptions = {
-  origin(origin, callback) {
-    // Allow non-browser tools (curl, health checks) with no Origin header
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`⛔ CORS blocked origin: ${origin}`);
-      callback(new Error(`Origin ${origin} not allowed`));
-    }
-  },
+  origin: '*',
   allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning'],
 };
 
@@ -38,7 +30,7 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: ALLOWED_ORIGINS,
+    origin: '*',
     methods: ['GET', 'POST'],
     allowedHeaders: ['ngrok-skip-browser-warning'],
   },

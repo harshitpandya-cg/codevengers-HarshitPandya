@@ -5,19 +5,19 @@ export default {
     extend: {
       colors: {
         mystery: {
-          bg: '#0b0a08',
-          panel: '#161310',
-          panelLight: '#1e1a15',
-          hairline: '#3a3129',
-          red: '#b3231c',
-          brass: '#d4a24c',
-          text: '#ece6d6',
-          textSecondary: '#8a8378',
+          bg: '#050505',
+          panel: '#0a0a0a',
+          panelLight: '#111111',
+          hairline: '#222222',
+          red: '#8a1c1c',
+          brass: '#b8996b',
+          text: '#dcd6ce',
+          textSecondary: '#6e6559',
         },
       },
       fontFamily: {
-        typewriter: ['"Special Elite"', 'monospace'],
-        case: ['Lora', 'serif'],
+        typewriter: ['"Cinzel Decorative"', 'serif'],
+        case: ['"Cormorant Garamond"', 'serif'],
       },
       keyframes: {
         blink: {

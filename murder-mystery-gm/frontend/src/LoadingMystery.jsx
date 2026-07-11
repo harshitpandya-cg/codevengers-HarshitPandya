@@ -48,7 +48,7 @@ export default function LoadingMystery({
   const showCursor = !prefersReducedMotion && typedText.length < label.length;
 
   return (
-    <div className="min-h-screen bg-mystery-bg flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+    <div className="loading-cinematic min-h-screen bg-mystery-bg flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
       <div className="desk-lamp-vignette absolute inset-0 pointer-events-none" aria-hidden="true" />
 
       <div className="relative z-10 max-w-xl w-full space-y-6">

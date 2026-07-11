@@ -12,6 +12,7 @@ import PlayerGrid from './PlayerGrid';
 import AdminTest from './AdminTest';
 import weddingTheme from './themes/wedding';
 import { ThemeAmbient, ThemeProvider } from './themes/ThemeProvider';
+import VoiceChat from './components/VoiceChat';
 
 const MIN_PLAYERS = 3;
 
@@ -125,6 +126,22 @@ export default function App() {
     socket.on('finalReveal', onFinalReveal);
     socket.on('gameError', onGameError);
 
+    function onKicked({ reason }) {
+      // Reset all state and send back to home with a message
+      setView('home');
+      setCurrentRoom('');
+      setPlayers([]);
+      setHostId('');
+      setMyCharacter(null);
+      setCaseInfo(null);
+      setRevealData(null);
+      setSharedClues([]);
+      setHasVoted(false);
+      setVoteCount(0);
+      setError(reason || 'You were removed from the room.');
+    }
+    socket.on('kicked', onKicked);
+
     return () => {
       socket.off('playerListUpdate', onPlayerListUpdate);
       socket.off('playerTypingUpdate', onPlayerTypingUpdate);
@@ -135,6 +152,7 @@ export default function App() {
       socket.off('voteCast', onVoteCast);
       socket.off('finalReveal', onFinalReveal);
       socket.off('gameError', onGameError);
+      socket.off('kicked', onKicked);
     };
   }, [view]);
 
@@ -199,6 +217,12 @@ export default function App() {
     socket.emit('returnToLobby');
   };
 
+  const handleKick = (targetId) => {
+    socket.emit('kickPlayer', { targetId }, (res) => {
+      if (!res?.ok) setError(res?.error || 'Could not kick player');
+    });
+  };
+
   // =====================
   //  ADAPTER LAYER
   // =====================
@@ -245,67 +269,70 @@ export default function App() {
         <div className="themed-game-shell min-h-screen bg-mystery-bg flex flex-col pb-20">
           <ThemeAmbient />
           <PublicInfoBar
-          title={caseInfo?.title}
-          victim={caseInfo?.victim}
-          location={caseInfo?.location}
-          round={caseInfo?.round}
-          totalRounds={caseInfo?.totalRounds}
-        />
+            title={caseInfo?.title}
+            victim={caseInfo?.victim}
+            location={caseInfo?.location}
+            round={caseInfo?.round}
+            totalRounds={caseInfo?.totalRounds}
+          />
 
-        <PlayerGrid players={players} typingPlayers={typingPlayers} gmSpeaking={gmSpeaking} />
-        
-        <div className="flex-1">
-          {gameTab === 'dossier' && (
-            <CharacterCard
-              name={adapted.name}
-              background={adapted.background}
-              secret={adapted.secret}
-              hiddenInfo={adapted.hiddenInfo}
-              motive={adapted.motive}
-              relationships={adapted.relationships}
-              alibi={adapted.alibi}
-            />
-          )}
-          {gameTab === 'investigate' && (
-            <InvestigateTab 
-              sharedClues={sharedClues} 
-              setGmSpeaking={setGmSpeaking} 
-              typingPlayers={typingPlayers}
-            />
-          )}
-          {gameTab === 'accuse' && (
-            <AccuseTab 
-              players={players} 
-              currentUserId={socket.id}
-              hasVoted={hasVoted}
-              voteCount={voteCount}
-              totalPlayers={players.length}
-              onVote={handleVote}
-            />
-          )}
-        </div>
+          <PlayerGrid players={players} typingPlayers={typingPlayers} gmSpeaking={gmSpeaking} />
+          
+          <div className="flex-1">
+            {gameTab === 'dossier' && (
+              <CharacterCard
+                name={adapted.name}
+                background={adapted.background}
+                secret={adapted.secret}
+                hiddenInfo={adapted.hiddenInfo}
+                motive={adapted.motive}
+                relationships={adapted.relationships}
+                alibi={adapted.alibi}
+              />
+            )}
+            {gameTab === 'investigate' && (
+              <InvestigateTab 
+                sharedClues={sharedClues} 
+                setGmSpeaking={setGmSpeaking} 
+                typingPlayers={typingPlayers}
+              />
+            )}
+            {gameTab === 'accuse' && (
+              <AccuseTab 
+                players={players} 
+                currentUserId={socket.id}
+                hasVoted={hasVoted}
+                voteCount={voteCount}
+                totalPlayers={players.length}
+                onVote={handleVote}
+              />
+            )}
+          </div>
 
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 w-full bg-[#110e0c] border-t border-[#2a251e] flex justify-around p-3 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
-          <button 
-            onClick={() => setGameTab('dossier')}
-            className={`font-typewriter tracking-widest text-sm uppercase px-4 py-2 rounded transition-colors ${gameTab === 'dossier' ? 'text-mystery-brass bg-[#2a251e]' : 'text-mystery-textSecondary hover:text-mystery-text'}`}
-          >
-            Dossier
-          </button>
-          <button 
-            onClick={() => setGameTab('investigate')}
-            className={`font-typewriter tracking-widest text-sm uppercase px-4 py-2 rounded transition-colors ${gameTab === 'investigate' ? 'text-mystery-brass bg-[#2a251e]' : 'text-mystery-textSecondary hover:text-mystery-text'}`}
-          >
-            Investigate
-          </button>
-          <button 
-            onClick={() => setGameTab('accuse')}
-            className={`font-typewriter tracking-widest text-sm uppercase px-4 py-2 rounded transition-colors ${gameTab === 'accuse' ? 'text-mystery-red bg-[#3a1010]' : 'text-mystery-red/60 hover:text-mystery-red'}`}
-          >
-            Accuse
-          </button>
-        </div>
+          {/* Voice Chat – floats above bottom nav */}
+          <VoiceChat players={players} roomCode={currentRoom} />
+
+          {/* Bottom Navigation */}
+          <div className="fixed bottom-0 w-full bg-[#110e0c] border-t border-[#2a251e] flex justify-around p-3 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+            <button 
+              onClick={() => setGameTab('dossier')}
+              className={`font-typewriter tracking-widest text-sm uppercase px-4 py-2 rounded transition-colors ${gameTab === 'dossier' ? 'text-mystery-brass bg-[#2a251e]' : 'text-mystery-textSecondary hover:text-mystery-text'}`}
+            >
+              Dossier
+            </button>
+            <button 
+              onClick={() => setGameTab('investigate')}
+              className={`font-typewriter tracking-widest text-sm uppercase px-4 py-2 rounded transition-colors ${gameTab === 'investigate' ? 'text-mystery-brass bg-[#2a251e]' : 'text-mystery-textSecondary hover:text-mystery-text'}`}
+            >
+              Investigate
+            </button>
+            <button 
+              onClick={() => setGameTab('accuse')}
+              className={`font-typewriter tracking-widest text-sm uppercase px-4 py-2 rounded transition-colors ${gameTab === 'accuse' ? 'text-mystery-red bg-[#3a1010]' : 'text-mystery-red/60 hover:text-mystery-red'}`}
+            >
+              Accuse
+            </button>
+          </div>
         </div>
       </ThemeProvider>
     );
@@ -317,16 +344,20 @@ export default function App() {
 
   if (view === 'lobby') {
     return (
-      <LobbyScreen
-        players={lobbyPlayers}
-        currentUserId={socket.id}
-        isHost={socket.id === hostId}
-        roomCode={currentRoom}
-        minPlayers={MIN_PLAYERS}
-        onStartGame={handleStartGame}
-        isStarting={isStarting}
-        error={error}
-      />
+      <>
+        <LobbyScreen
+          players={lobbyPlayers}
+          currentUserId={socket.id}
+          isHost={socket.id === hostId}
+          roomCode={currentRoom}
+          minPlayers={MIN_PLAYERS}
+          onStartGame={handleStartGame}
+          isStarting={isStarting}
+          error={error}
+          onKickPlayer={handleKick}
+        />
+        <VoiceChat players={players} roomCode={currentRoom} />
+      </>
     );
   }
 
@@ -351,6 +382,11 @@ export default function App() {
             <p className="home-case-eyebrow">Case file no. MM-01 · Active investigation</p>
             <h1>Murder<br /><span>Mystery</span></h1>
             <p className="home-case-tagline">Every table holds a secret. Every secret leaves a trace.</p>
+            <div className="mt-4 flex items-center justify-center space-x-2">
+              <span className="text-sm font-semibold opacity-80 text-mystery-brass">
+                {socket.connected ? '🟢 Backend Connected' : '🔴 Backend Disconnected'}
+              </span>
+            </div>
           </header>
 
           <div className="home-case-dossier">

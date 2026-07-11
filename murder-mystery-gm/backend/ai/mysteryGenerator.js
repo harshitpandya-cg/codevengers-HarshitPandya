@@ -151,6 +151,20 @@ const KHOON_KI_BARAAT_EXAMPLE = `{
 }`;
 
 function buildPrompt(playerCount, isRetry = false, previousError = "") {
+  const themes = [
+    "A 1920s masquerade ball on a luxury train going through the Alps.",
+    "A modern tech billionaire's private island during a storm.",
+    "A remote mountain cabin during a fierce blizzard.",
+    "A glamorous 1950s Hollywood movie set.",
+    "A high-stakes casino night in Monaco.",
+    "An isolated monastery in the Himalayas.",
+    "A bustling Bollywood film set in Mumbai.",
+    "A royal palace in Rajasthan during a massive royal wedding.",
+    "A haunted-looking Victorian mansion in London.",
+    "A luxury cruise ship in the middle of the Pacific Ocean."
+  ];
+  const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+
   let prompt = `You are an expert mystery writer. Your task is to generate a fully playable murder mystery scenario for a party game.
 Output ONLY valid JSON. No markdown formatting, no preamble, no explanation. Just the raw JSON object.
 
@@ -174,7 +188,10 @@ RULES FOR EXCELLENCE:
 - Avoid contradictions.
 - Make it atmospheric and engaging.
 
-IMPORTANT: The example above has 5 players, but you MUST generate exactly ${playerCount} players. Create a completely ORIGINAL mystery — do NOT copy the example story or characters. Every relationship "character" field must reference a character_name that exists in YOUR generated players array.
+IMPORTANT: The example above has 5 players, but you MUST generate exactly ${playerCount} players. 
+Create a completely ORIGINAL mystery — do NOT copy the example story or characters. 
+The setting for THIS mystery MUST be: ${randomTheme}
+Every relationship "character" field must reference a character_name that exists in YOUR generated players array.
 `;
 
   if (isRetry) {
@@ -233,9 +250,12 @@ export async function generateMystery(playerCount) {
       console.log(`[AI] Generating mystery for ${playerCount} players (Attempt ${attempt}/3)...`);
       rawOutput = await generateCompletion(prompt, { json: true });
       
+      // Clean up markdown code blocks if the LLM wrapped the JSON
+      const cleanOutput = rawOutput.replace(/^[\s\S]*?```[a-z]*\s*/i, '').replace(/\s*```[\s\S]*$/, '').trim();
+
       let mystery;
       try {
-        mystery = JSON.parse(rawOutput);
+        mystery = JSON.parse(cleanOutput || rawOutput);
       } catch (parseError) {
         throw new Error(`JSON Parsing Failed: ${parseError.message}`);
       }

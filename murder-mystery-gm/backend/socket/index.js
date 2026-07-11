@@ -362,7 +362,54 @@ export function registerSocketHandlers(io) {
       callback?.({ ok: true });
     });
 
+    socket.on('kickPlayer', ({ targetId }, callback) => {
+      const roomCode = socketToRoom.get(socket.id);
+      if (!roomCode) return callback?.({ ok: false, error: 'Not in a room' });
+
+      const room = rooms.get(roomCode);
+      if (!room) return callback?.({ ok: false, error: 'Room not found' });
+      if (room.hostId !== socket.id) return callback?.({ ok: false, error: 'Only the host can kick players' });
+      if (room.phase !== 'lobby') return callback?.({ ok: false, error: 'Can only kick during lobby' });
+      if (targetId === socket.id) return callback?.({ ok: false, error: 'Cannot kick yourself' });
+
+      // Notify the kicked player
+      io.to(targetId).emit('kicked', { reason: 'You were removed by the host.' });
+
+      // Remove from room state
+      room.players = room.players.filter((p) => p.id !== targetId);
+      socketToRoom.delete(targetId);
+
+      // Force-leave the Socket.IO room
+      const targetSocket = io.sockets.sockets.get(targetId);
+      if (targetSocket) targetSocket.leave(roomCode);
+
+      // Broadcast updated list
+      io.to(roomCode).emit('playerListUpdate', {
+        players: room.players.filter((p) => p.id),
+        hostId: room.hostId,
+      });
+
+      console.log(`🥾 Player ${targetId} kicked from room ${roomCode}`);
+      callback?.({ ok: true });
+    });
+
+    socket.on('voice:join', () => {
+
+      const roomCode = socketToRoom.get(socket.id);
+      if (!roomCode) return;
+      // Tell every OTHER client in the room that this peer is ready for a WebRTC connection
+      socket.to(roomCode).emit('voice:peer-joined', { peerId: socket.id });
+    });
+
+    socket.on('voice:signal', ({ targetId, signal }) => {
+      // Relay the WebRTC offer / answer / ICE candidate to the intended peer
+      if (targetId) {
+        socket.to(targetId).emit('voice:signal', { fromId: socket.id, signal });
+      }
+    });
+
     socket.on('disconnect', () => {
+
       console.log(`❌ Client disconnected: ${socket.id}`);
       const roomCode = socketToRoom.get(socket.id);
       if (roomCode) {
