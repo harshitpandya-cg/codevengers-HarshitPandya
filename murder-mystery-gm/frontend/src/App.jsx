@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useEffect, useState } from 'react';
 import { socket } from './socket';
 import { Skull, UserPlus, LogIn, AlertCircle, Users, FileSearch, Fingerprint } from 'lucide-react';
@@ -59,144 +60,70 @@ export default function App() {
   const [hasVoted, setHasVoted] = useState(false);
   const [voteCount, setVoteCount] = useState(0);
   const [revealData, setRevealData] = useState(null);
+=======
+import React, { useEffect, useRef } from 'react';
+import { useGame } from './state/GameContext.jsx';
+import Home from './pages/Home.jsx';
+import Lobby from './pages/Lobby.jsx';
+import Briefing from './pages/Briefing.jsx';
+import Investigation from './pages/Investigation.jsx';
+import Reveal from './pages/Reveal.jsx';
+import PastGames from './pages/PastGames.jsx';
+import AudioControl from './components/AudioControl.jsx';
+import { audioEngine } from './audio/audioEngine.js';
 
+export default function App() {
+  const { state, setView } = useGame();
+  const revealStingPlayed = useRef(false);
+>>>>>>> 0b6d1fa (working)
+
+  // Browsers block audio until a real user gesture happens anywhere on the page —
+  // unlock on the first click/keypress rather than requiring the user to specifically
+  // touch the volume control first.
   useEffect(() => {
-    function onPlayerListUpdate({ players: updatedPlayers, hostId: updatedHostId }) {
-      setPlayers(updatedPlayers);
-      setHostId(updatedHostId);
-    }
-
-    function onGamePhase({ phase }) {
-      if (phase === 'loading') {
-        setView('loading');
-        setIsStarting(false);
-        setError('');
-      } else if (phase === 'lobby') {
-        setView('lobby');
-        setIsStarting(false);
-        setError('');
-        setRevealData(null);
-        setMyCharacter(null);
-        setCaseInfo(null);
-        setHasVoted(false);
-        setVoteCount(0);
-        setSharedClues([]);
-      }
-    }
-
-    function onMysteryReady({ publicInfo }) {
-      setCaseInfo(publicInfo);
-      setView('game');
-      setGameTab('dossier');
-      setSharedClues([]);
-      setHasVoted(false);
-      setVoteCount(0);
-    }
-
-    function onYourCharacter(character) {
-      setMyCharacter(character);
-    }
-    
-    function onClueDiscovered(clue) {
-      setSharedClues(prev => {
-        if (prev.some(c => c.id === clue.id)) return prev;
-        return [...prev, clue];
-      });
-    }
-    
-    function onVoteCast({ voterName }) {
-      setVoteCount(prev => prev + 1);
-    }
-    
-    function onFinalReveal(data) {
-      setRevealData(data);
-      setView('reveal');
-    }
-
-    function onGameError({ message }) {
-      setError(message);
-      setIsStarting(false);
-      if (view === 'loading') setView('lobby');
-    }
-
-    function onPlayerTypingUpdate({ playerId, playerName, isTyping }) {
-      setTypingPlayers(prev => {
-        const next = { ...prev };
-        if (isTyping) {
-          next[playerId] = playerName;
-        } else {
-          delete next[playerId];
-        }
-        return next;
-      });
-    }
-
-    if (view === 'game' || view === 'lobby') {
-      socket.on('playerListUpdate', onPlayerListUpdate);
-      socket.on('playerTypingUpdate', onPlayerTypingUpdate);
-    }
-
-    socket.on('gamePhase', onGamePhase);
-    socket.on('mysteryReady', onMysteryReady);
-    socket.on('yourCharacter', onYourCharacter);
-    socket.on('clueDiscovered', onClueDiscovered);
-    socket.on('voteCast', onVoteCast);
-    socket.on('finalReveal', onFinalReveal);
-    socket.on('gameError', onGameError);
-
-    function onKicked({ reason }) {
-      // Reset all state and send back to home with a message
-      setView('home');
-      setCurrentRoom('');
-      setPlayers([]);
-      setHostId('');
-      setMyCharacter(null);
-      setCaseInfo(null);
-      setRevealData(null);
-      setSharedClues([]);
-      setHasVoted(false);
-      setVoteCount(0);
-      setError(reason || 'You were removed from the room.');
-    }
-    socket.on('kicked', onKicked);
-
-    return () => {
-      socket.off('playerListUpdate', onPlayerListUpdate);
-      socket.off('playerTypingUpdate', onPlayerTypingUpdate);
-      socket.off('gamePhase', onGamePhase);
-      socket.off('mysteryReady', onMysteryReady);
-      socket.off('yourCharacter', onYourCharacter);
-      socket.off('clueDiscovered', onClueDiscovered);
-      socket.off('voteCast', onVoteCast);
-      socket.off('finalReveal', onFinalReveal);
-      socket.off('gameError', onGameError);
-      socket.off('kicked', onKicked);
+    const unlock = () => {
+      audioEngine.unlock();
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
     };
-  }, [view]);
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
 
-  // --- DEV Admin Panel ---
-  if (import.meta.env.DEV && window.location.hash === '#admin') {
-    return <AdminTest />;
-  }
+  // Ambient bed plays only during active investigation; stops on any other screen.
+  useEffect(() => {
+    if (state.status === 'investigating') {
+      audioEngine.startAmbient();
+    } else {
+      audioEngine.stopAmbient();
+    }
+  }, [state.status]);
 
-  // --- Handlers ---
-  const handleCreate = (e) => {
-    e.preventDefault();
-    setError('');
-    if (!playerName.trim()) return setError('Please enter your name');
+  // One-shot reveal sting, fired once per game when the solution lands.
+  useEffect(() => {
+    if (state.status === 'revealed' && !revealStingPlayed.current) {
+      revealStingPlayed.current = true;
+      audioEngine.play('reveal');
+    }
+    if (state.status !== 'revealed') revealStingPlayed.current = false;
+  }, [state.status]);
 
-    socket.emit('createRoom', playerName, (res) => {
-      if (res.ok) {
-        setCurrentRoom(res.roomCode);
-        setPlayers(res.players);
-        setHostId(res.hostId);
-        setView('lobby');
-      } else {
-        setError(res.error);
-      }
+  // Event-injection / accusation stings, driven off new transcript entries.
+  const lastSeenLength = useRef(0);
+  useEffect(() => {
+    const newMessages = state.transcript.slice(lastSeenLength.current);
+    lastSeenLength.current = state.transcript.length;
+    newMessages.forEach((m) => {
+      if (m.type === 'event') audioEngine.play('event');
+      if (m.type === 'accusation') audioEngine.play('accusation');
     });
-  };
+  }, [state.transcript]);
 
+<<<<<<< HEAD
   const handleJoin = (e) => {
     e.preventDefault();
     setError('');
@@ -386,18 +313,33 @@ export default function App() {
   // =====================
   //  HOME SCREEN
   // =====================
+=======
+  let body;
+  if (state.view === 'past-games') {
+    body = <PastGames />;
+  } else if (state.view === 'home' || !state.roomCode) {
+    body = <Home />;
+  } else if (state.status === 'lobby') {
+    body = <Lobby />;
+  } else if (state.status === 'briefing') {
+    body = <Briefing />;
+  } else if (state.status === 'investigating') {
+    body = <Investigation />;
+  } else if (state.status === 'revealed') {
+    body = <Reveal />;
+  } else {
+    body = <Home />;
+  }
+
+>>>>>>> 0b6d1fa (working)
   return (
-    <div className="home-case-page min-h-screen text-mystery-text font-case">
-      <div className="home-case-grain" aria-hidden="true" />
-      <main className="home-case-shell">
-        <div className="home-case-folder" aria-hidden="true">
-          <div className="home-case-tab">CONFIDENTIAL</div>
-          <div className="home-case-cover">
-            <Skull className="home-case-cover-mark" />
-            <p>Case file no. MM-01</p>
-            <strong>Murder Mystery</strong>
-          </div>
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="brand" onClick={() => !state.roomCode && setView('home')}>
+          <span className="brand-icon">🗡️</span>
+          <span>AI Murder Mystery — Game Master</span>
         </div>
+<<<<<<< HEAD
 
         <section className="home-case-content" aria-label="Murder Mystery game entry">
           <header className="home-case-header">
@@ -478,6 +420,14 @@ export default function App() {
           <p className="home-case-footer">Issued for tonight’s investigation · Trust no alibi</p>
         </section>
       </main>
+=======
+        <div className="header-controls">
+          {!state.connected && <span className="conn-badge conn-bad">reconnecting…</span>}
+          <AudioControl />
+        </div>
+      </header>
+      <main className="app-main">{body}</main>
+>>>>>>> 0b6d1fa (working)
     </div>
   );
 }
