@@ -74,7 +74,7 @@ export default function RevealScreen({ revealData, isHost, onReturnToLobby, setG
           </h2>
           
           <div className="space-y-6">
-            {voteBreakdown.map((vote, i) => (
+            {(voteBreakdown || []).map((vote, i) => (
               <div key={i} className="border-b border-[#2a251e] pb-4 last:border-0 last:pb-0">
                 <p className="text-lg text-mystery-text">
                   <span className="font-typewriter uppercase text-mystery-brass">{vote.voterName}</span> accused{' '}

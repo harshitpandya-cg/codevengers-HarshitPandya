@@ -12,7 +12,8 @@ import PlayerGrid from './PlayerGrid';
 import AdminTest from './AdminTest';
 import weddingTheme from './themes/wedding';
 import { ThemeAmbient, ThemeProvider } from './themes/ThemeProvider';
-import VoiceChat from './components/VoiceChat';
+import React, { Suspense } from 'react';
+const VoiceChat = React.lazy(() => import('./components/VoiceChat'));
 
 const MIN_PLAYERS = 3;
 
@@ -25,6 +26,23 @@ export default function App() {
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [error, setError] = useState('');
   const [isStarting, setIsStarting] = useState(false);
+  const [isConnected, setIsConnected] = useState(socket.connected);
+
+  useEffect(() => {
+    if (!socket.connected) {
+      socket.connect();
+    }
+    setIsConnected(socket.connected);
+
+    function onConnect() { setIsConnected(true); }
+    function onDisconnect() { setIsConnected(false); }
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, []);
 
   const [currentRoom, setCurrentRoom] = useState('');
   const [players, setPlayers] = useState([]);
@@ -227,7 +245,7 @@ export default function App() {
   //  ADAPTER LAYER
   // =====================
 
-  const lobbyPlayers = players.map(p => ({
+  const lobbyPlayers = (players || []).map(p => ({
     id: p.id,
     name: p.name,
     isHost: p.id === hostId
@@ -310,7 +328,9 @@ export default function App() {
           </div>
 
           {/* Voice Chat – floats above bottom nav */}
-          <VoiceChat players={players} roomCode={currentRoom} />
+          <Suspense fallback={null}>
+            <VoiceChat players={players} roomCode={currentRoom} />
+          </Suspense>
 
           {/* Bottom Navigation */}
           <div className="fixed bottom-0 w-full bg-[#110e0c] border-t border-[#2a251e] flex justify-around p-3 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
@@ -356,7 +376,9 @@ export default function App() {
           error={error}
           onKickPlayer={handleKick}
         />
-        <VoiceChat players={players} roomCode={currentRoom} />
+        <Suspense fallback={null}>
+          <VoiceChat players={players} roomCode={currentRoom} />
+        </Suspense>
       </>
     );
   }
@@ -384,7 +406,7 @@ export default function App() {
             <p className="home-case-tagline">Every table holds a secret. Every secret leaves a trace.</p>
             <div className="mt-4 flex items-center justify-center space-x-2">
               <span className="text-sm font-semibold opacity-80 text-mystery-brass">
-                {socket.connected ? '🟢 Backend Connected' : '🔴 Backend Disconnected'}
+                {isConnected ? '🟢 Backend Connected' : '🔴 Backend Disconnected'}
               </span>
             </div>
           </header>

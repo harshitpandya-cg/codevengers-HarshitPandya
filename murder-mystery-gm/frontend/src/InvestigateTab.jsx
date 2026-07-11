@@ -4,7 +4,7 @@ import { Search, ChevronRight, FileSearch, Sparkles, Mic } from 'lucide-react';
 import { speakGameMaster } from './utils/speech';
 import { useTheme } from './themes/ThemeProvider';
 
-export default function InvestigateTab({ sharedClues, typingPlayers, setGmSpeaking }) {
+export default function InvestigateTab({ sharedClues = [], typingPlayers = {}, setGmSpeaking }) {
   const theme = useTheme();
   const EvidenceIcon = theme?.icons.evidence;
   const [input, setInput] = useState('');

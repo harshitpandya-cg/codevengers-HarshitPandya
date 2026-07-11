@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from './themes/ThemeProvider';
 
-export default function PlayerGrid({ players, typingPlayers, gmSpeaking }) {
+export default function PlayerGrid({ players = [], typingPlayers = {}, gmSpeaking }) {
   const theme = useTheme();
   const PlayerIcon = theme?.icons.player;
   const GmIcon = theme?.icons.gm;

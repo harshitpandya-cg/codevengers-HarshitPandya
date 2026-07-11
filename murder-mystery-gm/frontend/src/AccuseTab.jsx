@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Gavel, AlertCircle, Clock, Stamp } from 'lucide-react';
 
-export default function AccuseTab({ players, currentUserId, hasVoted, voteCount, totalPlayers, onVote }) {
+export default function AccuseTab({ players = [], currentUserId, hasVoted, voteCount, totalPlayers, onVote }) {
   const [selectedSuspect, setSelectedSuspect] = useState('');
   const [motive, setMotive] = useState('');
   const [error, setError] = useState('');

@@ -17,7 +17,7 @@ import { Crown, Users, Key, AlertCircle, Copy, UserX } from 'lucide-react';
  * @param {(id: string) => void} [props.onKickPlayer]
  */
 export default function LobbyScreen({
-  players,
+  players = [],
   currentUserId,
   isHost,
   roomCode,
